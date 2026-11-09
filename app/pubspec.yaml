@@ -1,0 +1,24 @@
+name: jarvis_app
+description: JARVIS AI — assistente pessoal por voz (Android).
+publish_to: 'none'
+version: 0.8.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+# Versões fixas, compatíveis com o Flutter 3.24.5 usado na compilação automática.
+dependencies:
+  flutter:
+    sdk: flutter
+  speech_to_text: 7.0.0
+  flutter_tts: 4.0.2
+  flutter_local_notifications: 17.2.4
+  timezone: 0.9.4
+  shared_preferences: 2.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

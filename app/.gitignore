@@ -1,0 +1,15 @@
+# Gerados pelo Flutter / compilação
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+android/
+ios/
+linux/
+macos/
+web/
+windows/
+*.iml
+.idea/

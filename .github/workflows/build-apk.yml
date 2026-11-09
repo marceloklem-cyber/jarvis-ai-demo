@@ -1,0 +1,74 @@
+name: Gerar APK do JARVIS (Android)
+
+on:
+  push:
+    paths: ["app/**", ".github/workflows/build-apk.yml"]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.24.5'
+          cache: true
+
+      - name: Preparar chave de assinatura (segredo do GitHub)
+        env:
+          KS: ${{ secrets.JARVIS_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/jarvis.jks"
+            echo "JARVIS_KEYSTORE_PATH=$RUNNER_TEMP/jarvis.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Segredo JARVIS_KEYSTORE_B64 ausente: o APK sai com assinatura temporária (para atualizar será preciso desinstalar)."
+          fi
+
+      - name: Gerar o projeto Android e aplicar permissões
+        env:
+          JARVIS_KEY_PASSWORD: ${{ secrets.JARVIS_KEY_PASSWORD }}
+        run: |
+          flutter create --project-name jarvis_app --org com.marcelo --platforms android .
+          rm -f test/widget_test.dart
+          python3 tool/patch_android.py
+
+      - name: Baixar dependências
+        run: flutter pub get
+
+      - name: Testes do núcleo
+        run: flutter test
+
+      - name: Compilar APK
+        env:
+          JARVIS_KEY_PASSWORD: ${{ secrets.JARVIS_KEY_PASSWORD }}
+        run: flutter build apk --release
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publicar em Releases (para baixar no celular)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: JARVIS ${{ github.run_number }}
+          body: APK gerado automaticamente a partir do commit ${{ github.sha }}.
+          files: app/build/app/outputs/flutter-apk/app-release.apk

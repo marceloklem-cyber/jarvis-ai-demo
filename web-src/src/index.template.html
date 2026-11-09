@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070e1a">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23091a2e' stroke='%2343d7ff' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='5' fill='%2363d8ff'/%3E%3C/svg%3E">
+<title>JARVIS AI — Demo 0.7</title>
+<style>
+:root{--bg:#070e1a;--panel:#0b1929e6;--line:#1b425a;--text:#e6f5ff;--muted:#99b9cd;--dim:#6f8ea2;--cyan:#63d8ff;--cyan2:#14bfff;--btn:#0e354d;--btnline:#2b7497;--ok:#55e6a5;--warn:#ffcf5c;--err:#ff7b8a;font-family:system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:var(--bg)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% 0%,#123151 0%,var(--bg) 60%) fixed;min-height:100vh;line-height:1.45}
+.wrap{max-width:860px;margin:auto;padding:20px 16px calc(24px + env(safe-area-inset-bottom))}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:23px;letter-spacing:3px;font-weight:800;color:var(--cyan)}
+.brand span{color:#fff}
+.tag{font-size:11px;color:#9ec4d8;letter-spacing:2px}
+.pill{border:1px solid #235471;border-radius:20px;padding:6px 11px;color:#7fe7ff;font-size:12px;white-space:nowrap}
+.banner{border:1px solid #2a6a4f;background:#0d2a22;color:#b9f5dc;border-radius:12px;padding:10px 14px;margin:14px 0 0;font-size:14px}
+.banner.warn{border-color:#6b5a1d;background:#2a240d;color:#ffe9a8}
+.hero{text-align:center;padding:26px 0 14px}
+.orb{width:156px;height:156px;border-radius:50%;margin:0 auto 16px;border:2px solid #43d7ff;box-shadow:0 0 25px #0088dd88,inset 0 0 36px #0088dd55;display:grid;place-items:center;background:radial-gradient(circle,#164b75,#091a2e 65%);cursor:pointer;color:#9df0ff;padding:0;transition:transform .2s}
+.orb svg{width:54px;height:54px}
+.orb:focus-visible{outline:3px solid var(--cyan2);outline-offset:6px}
+.orb.listening{animation:pulse 0.9s infinite alternate;border-color:#7ff3ff}
+.orb.speaking{box-shadow:0 0 40px #00c8ffaa,inset 0 0 45px #0088dd88}
+.orb.speaking .bars i{animation:bar .7s infinite ease-in-out alternate}
+@keyframes pulse{to{box-shadow:0 0 60px #00c8ff,inset 0 0 50px #0088ddaa;transform:scale(1.05)}}
+@keyframes bar{to{transform:scaleY(.35)}}
+.bars{display:none;gap:5px;align-items:center;height:54px}
+.bars i{display:block;width:6px;height:44px;background:#9df0ff;border-radius:3px;transform-origin:center}
+.bars i:nth-child(2){animation-delay:.15s!important}.bars i:nth-child(3){animation-delay:.3s!important}.bars i:nth-child(4){animation-delay:.45s!important}
+.orb.speaking .bars{display:flex}.orb.speaking .mic{display:none}
+h1{margin:4px 0;font-size:23px;font-weight:650}
+.state{color:var(--cyan);font-weight:600;min-height:22px;margin:4px 0}
+.heard{color:var(--muted);font-style:italic;min-height:20px;overflow-wrap:anywhere}
+.reply{max-width:620px;margin:10px auto 0;padding:12px 14px;border-radius:12px;background:#0b2034;border:1px solid #1e4d68;text-align:left;overflow-wrap:anywhere}
+.reply.error{border-color:#7a3340;background:#2a0f16}
+.reply.question{border-color:#2e7aa0}
+.reply[hidden]{display:none}
+.help{max-width:620px;margin:10px auto 0;padding:12px 14px;border-radius:12px;background:#2a240d;border:1px solid #6b5a1d;color:#ffe9a8;text-align:left;font-size:14px}
+.help[hidden]{display:none}
+p{color:var(--muted)}
+button,input,select{font:inherit}
+button{cursor:pointer;background:var(--btn);color:#d9f7ff;border:1px solid var(--btnline);border-radius:10px;padding:10px 14px;min-height:42px}
+button:hover{background:#145477}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cyan2);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.primary{background:#0782ba;border-color:var(--cyan2);font-weight:700}
+.ghost{background:transparent}
+.small{padding:6px 10px;min-height:34px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.stat,.panel{border:1px solid var(--line);background:var(--panel);border-radius:15px;padding:14px 16px}
+.stat strong{display:block;font-size:24px;color:#65dcff}
+.stat span{font-size:12px;color:#9cb8c9}
+.stat.warn strong{color:var(--warn)}
+.panel{margin:14px 0}
+h2{font-size:16px;margin:0 0 12px;color:#8ceaff}
+.entry{display:flex;gap:8px}
+.entry input{flex:1;min-width:0}
+.field{background:#091522;color:#e4f5ff;border:1px solid #2b5368;border-radius:9px;padding:11px 12px;width:100%}
+.hint{font-size:13px;color:#89acbf;margin-top:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chips button{font-size:13px;padding:6px 10px;min-height:32px;border-radius:16px;background:#0a2436;border-color:#22506a}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filters button{padding:7px 11px;min-height:36px;font-size:14px}
+.filters button[aria-pressed="true"]{background:#086d9b;border-color:var(--cyan2)}
+.day{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#7fb8d3;margin:14px 0 2px}
+.task{display:flex;gap:10px;align-items:center;border-top:1px solid #1a3648;padding:10px 0}
+.task input[type=checkbox]{width:22px;height:22px;accent-color:#14bfff;flex:none}
+.task .info{flex:1;min-width:0}
+.task .info b{display:block;font-weight:600;overflow-wrap:anywhere}
+.task small{color:#8cb6c9}
+.task.completed b,.task.cancelled b{text-decoration:line-through;color:#6c8596}
+.task .acts{display:flex;gap:6px}
+.badge{display:inline-block;font-size:11px;border-radius:8px;padding:1px 6px;margin-left:6px;border:1px solid #2b5368;color:#9cd6ee;vertical-align:1px}
+.badge.late{border-color:#7a5a1d;color:var(--warn)}
+.badge.cancel{border-color:#6b3340;color:var(--err)}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+label{font-size:13px;color:#a2c2d3}
+label .field{margin-top:5px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:#cfe8f5;margin:8px 0}
+.check input{width:20px;height:20px;accent-color:#14bfff}
+details.panel>summary{cursor:pointer;font-weight:700;color:#8ceaff;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.panel>summary::-webkit-details-marker{display:none}
+details.panel>summary::after{content:"▾";transition:transform .2s}
+details.panel[open]>summary::after{transform:rotate(180deg)}
+details.panel[open]>summary{margin-bottom:12px}
+.voicebox{border:1px solid #6b5a1d;background:#2a240d;color:#ffe9a8;border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
+.voicebox[hidden]{display:none}
+.voicebox ol{margin:6px 0 0;padding-left:20px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.log{list-style:none;margin:0;padding:0;font-size:14px}
+.log li{padding:6px 0;border-top:1px solid #1a3648;overflow-wrap:anywhere}
+.log li:first-child{border-top:0}
+.log .who{font-weight:700;margin-right:6px}
+.log .u .who{color:#bfe3f5}.log .j .who{color:var(--cyan)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f2b40;border:1px solid var(--cyan2);border-radius:12px;padding:8px 8px 8px 14px;display:flex;gap:10px;align-items:center;box-shadow:0 8px 30px #000a;max-width:calc(100vw - 32px);z-index:20}
+.toast[hidden]{display:none}
+.toast span{font-size:14px}
+dialog{background:#0b1929;color:var(--text);border:1px solid var(--line);border-radius:15px;padding:18px;width:min(520px,calc(100vw - 32px))}
+dialog::backdrop{background:#000a}
+footer{text-align:center;color:#708fa3;font-size:12px;margin:28px 0 8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}.entry{flex-wrap:wrap}.entry input{flex-basis:100%}.entry button{flex:1}.formgrid{grid-template-columns:1fr}.orb{width:136px;height:136px}.brand{font-size:20px}.pill{display:none}.task .acts button{padding:6px 8px}}
+@media(prefers-reduced-motion:reduce){.orb,.orb *{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <div>
+      <div class="brand">◉ JARVIS <span>AI</span></div>
+      <div class="tag">ASSISTENTE PESSOAL · DEMO <span data-version>0.7</span></div>
+    </div>
+    <span class="pill" id="modePill">● MODO LOCAL</span>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="hero">
+    <button id="mic" class="orb" aria-label="Falar com o JARVIS (atalho Alt+J)" title="Falar (Alt+J)">
+      <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></svg>
+      <span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </button>
+    <h1 id="greeting">À sua disposição.</h1>
+    <div class="state" id="state" aria-live="polite">Toque no círculo e fale, ou digite um comando.</div>
+    <div class="heard" id="heard" aria-live="polite"></div>
+    <div class="reply" id="reply" role="status" aria-live="polite" hidden></div>
+    <div class="help" id="micHelp" hidden></div>
+  </section>
+
+  <section class="panel">
+    <h2>⌘ Comando</h2>
+    <form class="entry" id="cmdForm" autocomplete="off">
+      <input id="command" class="field" enterkeyhint="send" placeholder="Ex.: amanhã às 15h me lembre de ligar para o contador" aria-label="Comando para o JARVIS">
+      <button class="primary" type="submit">Executar</button>
+    </form>
+    <div class="chips" id="examples" aria-label="Exemplos">
+      <button type="button">O que tenho hoje?</button>
+      <button type="button">O que tenho amanhã?</button>
+      <button type="button">Agende reunião com o contador amanhã às 14 horas</button>
+      <button type="button">Crie tarefa revisar contrato</button>
+      <button type="button">Desfazer</button>
+      <button type="button">Ajuda</button>
+    </div>
+    <div class="hint">No PC: <b>Alt + J</b> ativa o microfone · <b>Esc</b> interrompe a fala.</div>
+  </section>
+
+  <div class="grid">
+    <div class="stat"><strong id="sOpen">0</strong><span>Pendentes</span></div>
+    <div class="stat"><strong id="sToday">0</strong><span>Para hoje</span></div>
+    <div class="stat" id="sLateBox"><strong id="sLate">0</strong><span>Atrasadas</span></div>
+    <div class="stat"><strong id="sDone">0</strong><span>Concluídas</span></div>
+  </div>
+
+  <section class="panel">
+    <h2>▤ Minha agenda</h2>
+    <div class="filters" id="filters">
+      <button type="button" data-filter="pending" aria-pressed="true">Pendentes</button>
+      <button type="button" data-filter="today" aria-pressed="false">Hoje</button>
+      <button type="button" data-filter="tomorrow" aria-pressed="false">Amanhã</button>
+      <button type="button" data-filter="week" aria-pressed="false">7 dias</button>
+      <button type="button" data-filter="overdue" aria-pressed="false">Atrasadas</button>
+      <button type="button" data-filter="done" aria-pressed="false">Concluídas</button>
+      <button type="button" data-filter="all" aria-pressed="false">Todas</button>
+    </div>
+    <div id="tasks"></div>
+  </section>
+
+  <details class="panel" id="manualPanel">
+    <summary>＋ Nova tarefa manual</summary>
+    <form id="manualForm" autocomplete="off">
+      <input id="mTitle" class="field" placeholder="Descrição da tarefa" aria-label="Descrição da tarefa" required>
+      <div class="formgrid">
+        <label>Data e hora<input id="mDate" class="field" type="datetime-local"></label>
+        <label>Aviso<select id="mRemind" class="field"></select></label>
+        <label>Repetir<select id="mRec" class="field"></select></label>
+        <label class="check" style="align-self:end"><input id="mAllDay" type="checkbox"> Dia inteiro (sem horário)</label>
+      </div>
+      <div class="row"><button class="primary" type="submit">Salvar tarefa</button><span class="hint" style="margin:0">Deixe a data vazia para uma pendência sem data.</span></div>
+    </form>
+  </details>
+
+  <details class="panel" id="voicePanel">
+    <summary>◉ Voz e personalidade</summary>
+    <label for="voiceChoice">Voz (somente português)</label>
+    <select id="voiceChoice" class="field" style="margin:6px 0 4px"></select>
+    <label class="check"><input type="checkbox" id="showAll"> Mostrar vozes de outros idiomas</label>
+    <div class="formgrid">
+      <label>Velocidade <b id="rateVal"></b><input id="rate" type="range" min="0.7" max="1.2" step="0.02" style="width:100%"></label>
+      <label>Tom (mais baixo = mais grave) <b id="pitchVal"></b><input id="pitch" type="range" min="0.6" max="1.3" step="0.02" style="width:100%"></label>
+    </div>
+    <div class="row">
+      <button class="primary" id="preview" type="button">▶ Ouvir prévia</button>
+      <button id="resetVoice" type="button" class="ghost">Restaurar padrão</button>
+    </div>
+    <p class="hint" id="voiceInfo"></p>
+    <div class="voicebox" id="voiceGuide" hidden></div>
+    <hr style="border:0;border-top:1px solid #1a3648;margin:16px 0">
+    <label class="check"><input type="checkbox" id="honorific"> Tratar por "senhor"</label>
+    <label class="check"><input type="checkbox" id="askLead"> Perguntar a antecedência ao agendar compromissos</label>
+    <label>Antecedência padrão de compromissos<select id="defLead" class="field" style="max-width:260px"></select></label>
+    <label class="check"><input type="checkbox" id="followUp"> Reabrir o microfone quando o JARVIS fizer uma pergunta</label>
+  </details>
+
+  <details class="panel" id="prefsPanel">
+    <summary>⚙ Lembretes, resumo e dados</summary>
+    <p class="hint" style="margin-top:0">Nesta versão web, avisos e resumo só funcionam <b>com a página aberta</b>. Com o navegador fechado ou o celular bloqueado, os avisos confiáveis virão no aplicativo nativo.</p>
+    <div class="row">
+      <button id="notifBtn" type="button">Ativar notificações</button>
+      <span class="hint" id="notifInfo" style="margin:0"></span>
+    </div>
+    <label class="check"><input type="checkbox" id="sumOn"> Resumo diário falado</label>
+    <div class="row">
+      <label>Horário<input id="sumTime" class="field" type="time" style="max-width:150px"></label>
+      <button id="sumNow" type="button">Ouvir resumo agora</button>
+    </div>
+    <div class="row">
+      <button id="exportBtn" type="button">⬇ Exportar backup</button>
+      <button id="importBtn" type="button">⬆ Importar backup</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint" id="storageInfo"></p>
+  </details>
+
+  <details class="panel">
+    <summary>☰ Conversa recente</summary>
+    <ul class="log" id="log"></ul>
+  </details>
+
+  <footer>JARVIS AI · Demo <span data-version>0.7</span> · Protótipo web pessoal · Dados somente neste navegador · Lembretes apenas com a página aberta</footer>
+</main>
+
+<div class="toast" id="toast" hidden><span id="toastText"></span><button class="small primary" id="toastUndo" type="button">Desfazer</button></div>
+
+<dialog id="editDlg" aria-labelledby="editTitle">
+  <form method="dialog" id="editForm">
+    <h2 id="editTitle">Editar tarefa</h2>
+    <label>Descrição<input id="eTitle" class="field" required></label>
+    <div class="formgrid">
+      <label>Data e hora<input id="eDate" class="field" type="datetime-local"></label>
+      <label>Aviso<select id="eRemind" class="field"></select></label>
+      <label>Repetir<select id="eRec" class="field"></select></label>
+      <label class="check" style="align-self:end"><input id="eAllDay" type="checkbox"> Dia inteiro</label>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button value="cancel" type="submit" formnovalidate class="ghost">Cancelar</button>
+      <button value="save" type="submit" class="primary">Salvar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/*@@JARVIS_CORE@@*/
+</script>
+<script>
+(function () {
+  'use strict';
+  const C = window.JarvisCore;
+  const $ = (s) => document.querySelector(s);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isWindows = /Windows/i.test(navigator.userAgent);
+  const isEdge = /Edg\//.test(navigator.userAgent);
+
+  document.title = 'JARVIS AI — Demo ' + C.VERSION.replace(/\.0$/, '');
+  document.querySelectorAll('[data-version]').forEach((el) => { el.textContent = C.VERSION.replace(/\.0$/, ''); });
+
+  // ---------------------------------------------------------- armazenamento
+  let storage = null, storageOk = true;
+  try { localStorage.setItem('__jarvis_t', '1'); localStorage.removeItem('__jarvis_t'); storage = localStorage; }
+  catch (e) {
+    storageOk = false;
+    const m = new Map();
+    storage = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
+  }
+  const engine = C.createEngine({ storage });
+  const S = engine.settings;
+  window.__jarvis = engine; // diagnóstico pelo console
+
+  function banner(text, warn) { const b = $('#banner'); b.textContent = text; b.className = 'banner' + (warn ? ' warn' : ''); b.hidden = false; }
+  if (!storageOk) banner('O navegador bloqueou o armazenamento local. As tarefas desta sessão serão perdidas ao fechar a página.', true);
+  else if (engine.status.loadError === 'corrupt') banner('Os dados salvos estavam corrompidos. Uma cópia foi preservada e a agenda foi iniciada vazia. Use "Importar backup" se tiver um.', true);
+  else if (engine.status.migrated) {
+    banner(engine.status.saved
+      ? 'Importei ' + engine.status.migrated + ' tarefa(s) da versão anterior. A cópia original continua guardada neste navegador.'
+      : 'Encontrei ' + engine.status.migrated + ' tarefa(s) da versão anterior, mas não consegui gravá-las no novo formato.', !engine.status.saved);
+  }
+
+  // ------------------------------------------------------------- utilidades
+  const pad = (n) => String(n).padStart(2, '0');
+  const toLocalInput = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const fmtTime = (d) => pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const LEADS = [[0, 'Na hora'], [5, '5 minutos antes'], [10, '10 minutos antes'], [15, '15 minutos antes'], [30, '30 minutos antes'], [60, '1 hora antes'], [120, '2 horas antes'], [1440, '1 dia antes'], [-1, 'Sem aviso']];
+  const RECS = [['', 'Não repetir'], ['daily', 'Todos os dias'], ['weekly', 'Toda semana (mesmo dia)'], ['monthly', 'Todo mês (mesmo dia)']];
+  function fillSelect(sel, opts, value) {
+    sel.replaceChildren(...opts.map(([v, t]) => { const o = document.createElement('option'); o.value = String(v); o.textContent = t; return o; }));
+    if (value != null) sel.value = String(value);
+  }
+  fillSelect($('#mRemind'), LEADS, 0);
+  fillSelect($('#eRemind'), LEADS, 0);
+  fillSelect($('#mRec'), RECS, '');
+  fillSelect($('#eRec'), RECS, '');
+  fillSelect($('#defLead'), LEADS.filter(([v]) => v > 0), S.defaultLead);
+
+  function greet() {
+    const h = new Date().getHours();
+    $('#greeting').textContent = (h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite') + (S.honorific ? ', senhor.' : '.');
+  }
+  greet();
+
+  // ------------------------------------------------------------------ voz
+  const synth = 'speechSynthesis' in window ? window.speechSynthesis : null;
+  let voices = [];
+  let speakSeq = 0;
+  const orb = $('#mic');
+
+  function currentVoice() { return voices.find((v) => v.voiceURI === S.voiceURI) || null; }
+  function chunks(text) {
+    const parts = String(text).match(/[^.!?;:]+[.!?;:]*\s*/g) || [String(text)];
+    const out = [];
+    for (const p of parts) {
+      if (out.length && (out[out.length - 1] + p).length < 180) out[out.length - 1] += p;
+      else out.push(p);
+    }
+    return out.map((s) => s.trim()).filter(Boolean);
+  }
+  // Fala uma frase por vez, mantendo referência às falas (o Chrome descarta objetos sem referência e corta o áudio)
+  // e "acordando" o sintetizador a cada 8 s (vozes Google do Chrome param sozinhas por volta de 15 s).
+  let liveUtterances = [];
+  let keepAlive = null;
+  function speak(text, onEnd) {
+    if (!synth || !text) { if (onEnd) onEnd(); return; }
+    const id = ++speakSeq;
+    synth.cancel();
+    const list = chunks(text);
+    const v = currentVoice();
+    let i = 0;
+    const finish = () => {
+      clearInterval(keepAlive); keepAlive = null; liveUtterances = [];
+      orb.classList.remove('speaking');
+      if (onEnd) onEnd();
+    };
+    const next = () => {
+      if (id !== speakSeq) return;
+      if (i >= list.length) return finish();
+      const u = new SpeechSynthesisUtterance(list[i++]);
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'pt-BR';
+      u.rate = S.rate; u.pitch = S.pitch;
+      u.onstart = () => { if (id === speakSeq) orb.classList.add('speaking'); };
+      u.onend = () => { if (id === speakSeq) setTimeout(next, 40); };
+      u.onerror = (e) => { if (id !== speakSeq) return; if (e && (e.error === 'interrupted' || e.error === 'canceled')) return; setTimeout(next, 40); };
+      liveUtterances.push(u);
+      synth.speak(u);
+    };
+    clearInterval(keepAlive);
+    keepAlive = setInterval(() => {
+      if (id !== speakSeq) { clearInterval(keepAlive); return; }
+      if (synth.speaking && !synth.paused && v && /google/i.test(v.name)) { synth.pause(); synth.resume(); }
+    }, 8000);
+    setTimeout(next, 120);
+  }
+  function stopSpeaking() { speakSeq++; clearInterval(keepAlive); liveUtterances = []; if (synth) synth.cancel(); orb.classList.remove('speaking'); }
+  /** Avisos automáticos esperam a fala atual terminar em vez de cortá-la. */
+  function speakWhenFree(text) {
+    if (synth && (synth.speaking || orb.classList.contains('speaking') || recog)) { setTimeout(() => speakWhenFree(text), 1500); return; }
+    speak(text);
+  }
+
+  const GENDER = { m: 'masculina provável', f: 'feminina provável', '?': 'gênero não informado' };
+  function loadVoices() {
+    if (!synth) {
+      $('#voiceChoice').replaceChildren(new Option('Síntese de voz indisponível neste navegador', ''));
+      $('#voiceInfo').textContent = 'Este navegador não oferece síntese de voz. As respostas aparecerão apenas em texto.';
+      return;
+    }
+    voices = synth.getVoices();
+    const ranked = C.rankVoices(voices, S.showAllVoices);
+    const sel = $('#voiceChoice');
+    if (!ranked.length) {
+      sel.replaceChildren(new Option(voices.length ? 'Nenhuma voz em português instalada' : 'Carregando vozes…', ''));
+    } else {
+      sel.replaceChildren(...ranked.map(({ voice, info }) => new Option(voice.name + ' — ' + voice.lang + ' · ' + GENDER[info.gender] + (info.quality ? ' · neural' : ''), voice.voiceURI)));
+      if (!ranked.some((x) => x.voice.voiceURI === S.voiceURI)) {
+        S.voiceURI = ranked[0].voice.voiceURI; // melhor candidata: masculina pt-BR, depois neural
+        engine.saveSettings();
+      }
+      sel.value = S.voiceURI;
+    }
+    const pt = C.rankVoices(voices, false);
+    const males = pt.filter((x) => x.info.gender === 'm').length;
+    $('#voiceInfo').textContent = 'Vozes em português neste dispositivo: ' + pt.length + (pt.length ? ' (' + males + ' identificada' + (males === 1 ? '' : 's') + ' como masculina).' : '.') +
+      ' O navegador não informa o gênero: a identificação é feita pelo nome e pode falhar — confira pela prévia.';
+    voiceGuide(males);
+  }
+  function voiceGuide(males) {
+    const box = $('#voiceGuide');
+    const cur = currentVoice();
+    const g = cur ? C.classifyVoice(cur).gender : '?';
+    if (g === 'm') { box.hidden = true; return; }
+    const lines = [];
+    const intro = document.createElement('div');
+    intro.textContent = males
+      ? 'A voz selecionada não parece masculina. Há ' + males + ' opção(ões) masculina(s) na lista acima.'
+      : 'Não encontrei voz masculina em português neste navegador. O tom mais grave ajuda, mas não transforma uma voz feminina em masculina.';
+    if (isAndroid) {
+      lines.push('No Android, o Chrome usa a voz do mecanismo de "Conversão de texto em voz" do sistema.');
+      lines.push('Abra Configurações › Gerenciamento geral › Idioma › Conversão de texto em voz (o caminho varia conforme o modelo).');
+      lines.push('Defina "Serviços de voz do Google" (ou Speech Recognition and Synthesis) como mecanismo preferido.');
+      lines.push('Toque na engrenagem › Instalar dados de voz › Português (Brasil) › ouça as variantes e escolha uma masculina.');
+      lines.push('Feche e reabra esta página e teste a prévia.');
+    } else if (isWindows && !isEdge) {
+      lines.push('No Windows, o Microsoft Edge oferece vozes neurais gratuitas em português, como a masculina "Antonio". Abra esta mesma página no Edge.');
+      lines.push('No Chrome, a voz masculina local costuma ser a "Microsoft Daniel": Configurações do Windows › Hora e idioma › Fala › Adicionar vozes › Português (Brasil).');
+      lines.push('Depois reinicie o navegador.');
+    } else if (isWindows && isEdge) {
+      lines.push('No Edge, procure na lista as vozes "Microsoft Antonio Online (Natural)" ou "Microsoft Donato/Fabio/Julio/Nicolau/Valerio Online", quando disponíveis.');
+      lines.push('Se a lista estiver curta, verifique a conexão: as vozes "Online" exigem internet.');
+    } else {
+      lines.push('Verifique as vozes de texto para fala do seu sistema e instale uma voz masculina em português, se houver.');
+    }
+    const ol = document.createElement('ol');
+    lines.forEach((l) => { const li = document.createElement('li'); li.textContent = l; ol.append(li); });
+    box.replaceChildren(intro, ol);
+    box.hidden = false;
+  }
+  if (synth) {
+    synth.addEventListener ? synth.addEventListener('voiceschanged', loadVoices) : (synth.onvoiceschanged = loadVoices);
+    loadVoices();
+    [300, 1000, 2500].forEach((ms) => setTimeout(loadVoices, ms));
+  } else loadVoices();
+
+  function syncVoiceUI() {
+    $('#rate').value = S.rate; $('#pitch').value = S.pitch;
+    $('#rateVal').textContent = Number(S.rate).toFixed(2); $('#pitchVal').textContent = Number(S.pitch).toFixed(2);
+    $('#showAll').checked = !!S.showAllVoices; $('#honorific').checked = !!S.honorific; $('#askLead').checked = !!S.askLead;
+    $('#followUp').checked = !!S.followUp; $('#defLead').value = String(S.defaultLead);
+    $('#sumOn').checked = !!S.summary.enabled; $('#sumTime').value = S.summary.time || '08:00';
+  }
+  syncVoiceUI();
+  const saveS = () => { if (!engine.saveSettings()) toast('Não consegui salvar as preferências.'); };
+  $('#voiceChoice').addEventListener('change', (e) => { S.voiceURI = e.target.value; saveS(); voiceGuide(C.rankVoices(voices, false).filter((x) => x.info.gender === 'm').length); });
+  $('#showAll').addEventListener('change', (e) => { S.showAllVoices = e.target.checked; saveS(); loadVoices(); });
+  $('#rate').addEventListener('input', (e) => { S.rate = Number(e.target.value); $('#rateVal').textContent = S.rate.toFixed(2); });
+  $('#pitch').addEventListener('input', (e) => { S.pitch = Number(e.target.value); $('#pitchVal').textContent = S.pitch.toFixed(2); });
+  ['#rate', '#pitch'].forEach((s) => $(s).addEventListener('change', saveS));
+  $('#resetVoice').addEventListener('click', () => { S.rate = 0.92; S.pitch = 0.9; saveS(); syncVoiceUI(); });
+  $('#honorific').addEventListener('change', (e) => { S.honorific = e.target.checked; saveS(); greet(); });
+  $('#askLead').addEventListener('change', (e) => { S.askLead = e.target.checked; saveS(); });
+  $('#defLead').addEventListener('change', (e) => { S.defaultLead = Number(e.target.value); saveS(); });
+  $('#followUp').addEventListener('change', (e) => { S.followUp = e.target.checked; saveS(); });
+  $('#preview').addEventListener('click', () => {
+    const h = new Date().getHours();
+    speak((h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite') + (S.honorific ? ', senhor' : '') + '. Aqui é o JARVIS. Sua agenda está organizada e pronta para novos compromissos.');
+  });
+
+  // ------------------------------------------------------------- microfone
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null;
+  function setState(text) { $('#state').textContent = text; }
+  const IDLE = 'Toque no círculo e fale, ou digite um comando.';
+  function micHelp(text) { const h = $('#micHelp'); h.textContent = text; h.hidden = !text; }
+  const MIC_ERR = {
+    file: ['Microfone bloqueado: a página foi aberta como arquivo.', 'Abra pelo endereço publicado: https://marceloklem-cyber.github.io/jarvis-ai-demo/ no Chrome ou Edge. O comando por texto funciona normalmente.'],
+    insecure: ['O microfone exige conexão segura (HTTPS).', 'Abra a versão publicada no GitHub Pages (endereço começando com https://).'],
+    unsupported: ['Este navegador não oferece reconhecimento de voz.', 'Use o Chrome no Android ou o Chrome/Edge no Windows. O comando por texto continua funcionando.'],
+    'not-allowed': ['Permissão de microfone negada.', 'Toque no ícone ao lado do endereço › Permissões › Microfone › Permitir. No Brave, verifique também os "Shields". Depois recarregue a página.'],
+    'service-not-allowed': ['O navegador não permitiu o serviço de reconhecimento.', 'Verifique a permissão de microfone do site e, no Android, se o app Google está ativo e atualizado.'],
+    'no-speech': ['Não ouvi nada.', 'Toque no círculo e comece a falar logo em seguida.'],
+    'audio-capture': ['Nenhum microfone disponível.', 'Verifique se há microfone conectado e se outro aplicativo não está usando-o.'],
+    network: ['Falha de rede no reconhecimento de voz.', 'O reconhecimento do navegador pode depender de internet. Verifique a conexão e tente de novo.'],
+    'language-not-supported': ['Português não está disponível para reconhecimento neste navegador.', 'No Android, instale o pacote de idioma português no app Google.']
+  };
+  const touch = isAndroid || /iPhone|iPad/i.test(navigator.userAgent);
+  const isBrave = !!(navigator.brave && typeof navigator.brave.isBrave === 'function');
+  /** Diagnostica "permissão negada": site bloqueado, sistema bloqueado ou Brave. */
+  async function explainDenied() {
+    let state = 'unknown';
+    try { state = (await navigator.permissions.query({ name: 'microphone' })).state; } catch (e) { /* sem Permissions API */ }
+    const tap = touch ? 'Toque' : 'Clique';
+    const settingsUrl = isEdge ? 'edge://settings/content/microphone' : 'chrome://settings/content/microphone';
+    if (isBrave) return 'Você está no Brave, que costuma bloquear o serviço de reconhecimento de voz mesmo com a permissão liberada. Use o Chrome ou o Edge.';
+    if (state === 'granted') {
+      return touch
+        ? 'O site tem permissão, mas o sistema bloqueou o microfone. Verifique as permissões de microfone do Chrome nas configurações do Android e se o app Google está ativo.'
+        : 'O site tem permissão, mas o Windows bloqueou o microfone. Abra Configurações › Privacidade e segurança › Microfone e ative: "Acesso ao microfone", "Permitir que aplicativos acessem o microfone" e "Permitir que aplicativos da área de trabalho acessem o microfone". Depois feche e reabra o navegador.';
+    }
+    if (state === 'denied') {
+      return tap + ' no ícone à esquerda do endereço › Microfone › Permitir, e recarregue a página.' +
+        (touch ? '' : ' Se não aparecer, abra ' + settingsUrl + ' e remova este site da lista "Não permitido".');
+    }
+    return tap + ' no círculo novamente e escolha "Permitir" quando o navegador perguntar.' + (touch ? '' : ' Se nada aparecer, verifique em ' + settingsUrl + '.');
+  }
+  function micError(code, extra) {
+    if (code === 'aborted') { setState(IDLE); return; }
+    if (code === 'not-allowed' || code === 'service-not-allowed') {
+      setState(code === 'not-allowed' ? 'Permissão de microfone negada.' : 'O navegador não permitiu o serviço de reconhecimento.');
+      micHelp('Verificando a causa…');
+      explainDenied().then(micHelp);
+      return;
+    }
+    const [title, help] = MIC_ERR[code] || ['Falha no microfone (' + code + ').', extra || 'Tente novamente. Se persistir, use o campo de texto.'];
+    setState(title);
+    micHelp(code === 'no-speech' ? '' : help);
+  }
+  function listen() {
+    if (location.protocol === 'file:' || location.protocol === 'content:') return micError('file');
+    if (!window.isSecureContext) return micError('insecure');
+    if (!SR) return micError('unsupported');
+    if (recog) { try { recog.stop(); } catch (e) { /* já parado */ } return; }
+    stopSpeaking();
+    micHelp('');
+    let finalText = '', errored = false;
+    const r = new SR();
+    recog = r;
+    r.lang = 'pt-BR'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    r.onstart = () => { orb.classList.add('listening'); setState('Ouvindo…'); $('#heard').textContent = ''; };
+    r.onresult = (e) => {
+      let fin = '', interim = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) fin += res[0].transcript; else interim += res[0].transcript;
+      }
+      finalText = fin;
+      $('#heard').textContent = '“' + (fin || interim).trim() + '”';
+    };
+    r.onerror = (e) => { errored = true; micError(e.error); };
+    r.onend = () => {
+      recog = null;
+      orb.classList.remove('listening');
+      if (finalText.trim()) { setState('Processando…'); run(finalText.trim(), 'voice'); }
+      else if (!errored) { setState('Não ouvi nada. Toque e fale novamente.'); }
+    };
+    try { r.start(); } catch (err) { recog = null; micError('start', 'Não foi possível iniciar o microfone: ' + err.message); }
+  }
+  orb.addEventListener('click', listen);
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && (e.key === 'j' || e.key === 'J')) { e.preventDefault(); listen(); }
+    else if (e.key === 'Escape') { stopSpeaking(); if (recog) try { recog.abort(); } catch (x) { /* ok */ } }
+  });
+
+  // ----------------------------------------------------------- execução
+  let lastRun = { text: '', at: 0 };
+  function run(text, source) {
+    text = String(text || '').trim();
+    if (!text) return;
+    const now = Date.now();
+    if (text.toLowerCase() === lastRun.text && now - lastRun.at < 4000) return; // reconhecimento repetido
+    lastRun = { text: text.toLowerCase(), at: now };
+    const r = engine.handle(text, source);
+    log('Você', text, 'u');
+    log('JARVIS', r.speech, 'j');
+    const box = $('#reply');
+    box.textContent = r.speech;
+    box.className = 'reply ' + (r.kind || 'ok');
+    box.hidden = false;
+    setState(r.kind === 'question' ? 'Aguardando sua resposta…' : r.kind === 'error' ? 'Não foi possível concluir.' : 'Pronto.');
+    if (r.query) setFilterFromQuery(r.query);
+    render();
+    if (r.changed) toast(r.speech.length > 70 ? r.speech.slice(0, 67) + '…' : r.speech, engine.canUndo);
+    const reopen = r.kind === 'question' && source === 'voice' && S.followUp;
+    speak(r.speech, () => { if (reopen && !recog) setTimeout(listen, 250); });
+  }
+  $('#cmdForm').addEventListener('submit', (e) => { e.preventDefault(); const v = $('#command').value; $('#command').value = ''; run(v, 'text'); });
+  $('#examples').addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') run(e.target.textContent, 'text'); });
+
+  function log(who, text, cls) {
+    const li = document.createElement('li');
+    li.className = cls;
+    const b = document.createElement('span'); b.className = 'who'; b.textContent = who + ':';
+    li.append(b, document.createTextNode(text));
+    const ul = $('#log');
+    ul.prepend(li);
+    while (ul.children.length > 30) ul.lastChild.remove();
+  }
+
+  let toastTimer = null;
+  function toast(text, undoable) {
+    $('#toastText').textContent = text;
+    $('#toastUndo').hidden = !undoable;
+    $('#toast').hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 7000);
+  }
+  $('#toastUndo').addEventListener('click', () => { $('#toast').hidden = true; run('desfazer', 'text'); lastRun = { text: '', at: 0 }; });
+
+  // ------------------------------------------------------------- agenda
+  let filter = 'pending';
+  function setFilter(f) {
+    filter = f;
+    document.querySelectorAll('#filters [data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === f)));
+    render();
+  }
+  function setFilterFromQuery(q) {
+    const today = C.dayKey(new Date());
+    const tomorrow = C.dayKey(new Date(Date.now() + 86400000));
+    if (q.range === 'day' && q.date === today) setFilter('today');
+    else if (q.range === 'day' && q.date === tomorrow) setFilter('tomorrow');
+    else if (q.range === 'week') setFilter('week');
+    else if (q.range === 'overdue') setFilter('overdue');
+    else if (q.range === 'done') setFilter('done');
+    else if (q.range === 'pending') setFilter('pending');
+    else setFilter('all');
+  }
+  $('#filters').addEventListener('click', (e) => { const b = e.target.closest('[data-filter]'); if (b) setFilter(b.dataset.filter); });
+
+  function matches(t) {
+    const now = new Date();
+    switch (filter) {
+      case 'today': return engine.inRange(t, { range: 'day', date: C.dayKey(now) });
+      case 'tomorrow': return engine.inRange(t, { range: 'day', date: C.dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)) });
+      case 'week': return engine.inRange(t, { range: 'week' });
+      case 'overdue': return engine.inRange(t, { range: 'overdue' });
+      case 'done': return t.status === 'completed';
+      case 'all': return true;
+      default: return t.status === 'pending';
+    }
+  }
+  function render() {
+    const now = new Date();
+    const all = engine.tasks;
+    storageInfo();
+    $('#sOpen').textContent = all.filter((t) => t.status === 'pending').length;
+    $('#sToday').textContent = all.filter((t) => engine.inRange(t, { range: 'day', date: C.dayKey(now) })).length;
+    const late = all.filter((t) => engine.inRange(t, { range: 'overdue' })).length;
+    $('#sLate').textContent = late;
+    $('#sLateBox').classList.toggle('warn', late > 0);
+    $('#sDone').textContent = all.filter((t) => t.status === 'completed').length;
+
+    const items = all.filter(matches).sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || engine.sortTasks(a, b));
+    const box = $('#tasks');
+    box.replaceChildren();
+    if (!items.length) { const p = document.createElement('p'); p.textContent = 'Nenhuma tarefa nesta visualização.'; box.append(p); return; }
+    let lastDay = null;
+    for (const t of items) {
+      const d = t.dueAt ? new Date(t.dueAt) : null;
+      const key = d ? C.dayKey(d) : 'none';
+      if (key !== lastDay) {
+        lastDay = key;
+        const h = document.createElement('div');
+        h.className = 'day';
+        if (!d) h.textContent = 'Sem data';
+        else {
+          const lbl = C.dayLabel(d, now);
+          const wd = d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+          h.textContent = /^(hoje|amanhã|ontem|depois de amanhã)$/.test(lbl) ? lbl + ' · ' + wd : wd;
+        }
+        box.append(h);
+      }
+      box.append(row(t, now));
+    }
+  }
+  function row(t, now) {
+    const el = document.createElement('div');
+    el.className = 'task ' + t.status;
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = t.status === 'completed'; cb.disabled = t.status === 'cancelled';
+    cb.setAttribute('aria-label', 'Concluir ' + t.title);
+    cb.addEventListener('change', () => { const r = engine.setDone(t.id, cb.checked); feedback(r); });
+    const info = document.createElement('div'); info.className = 'info';
+    const b = document.createElement('b'); b.textContent = t.title;
+    const sm = document.createElement('small');
+    const bits = [];
+    if (t.dueAt) {
+      const d = new Date(t.dueAt);
+      bits.push(t.allDay ? 'dia inteiro' : fmtTime(d));
+      if (!t.allDay && t.reminderOffsetsMinutes.length) bits.push('aviso ' + t.reminderOffsetsMinutes.map(C.describeLead).join(', '));
+      else if (!t.allDay) bits.push('sem aviso');
+    } else bits.push('sem data');
+    if (t.recurrenceRule) bits.push('↻ ' + C.describeRecurrence(t.recurrenceRule));
+    sm.textContent = bits.join(' · ');
+    info.append(b, sm);
+    if (t.status === 'pending' && engine.inRange(t, { range: 'overdue' })) { const bd = document.createElement('span'); bd.className = 'badge late'; bd.textContent = 'atrasada'; b.append(bd); }
+    if (t.status === 'cancelled') { const bd = document.createElement('span'); bd.className = 'badge cancel'; bd.textContent = 'cancelada'; b.append(bd); }
+    const acts = document.createElement('div'); acts.className = 'acts';
+    const ed = document.createElement('button'); ed.type = 'button'; ed.className = 'small'; ed.textContent = 'Editar'; ed.setAttribute('aria-label', 'Editar ' + t.title);
+    ed.addEventListener('click', () => openEdit(t));
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'small ghost'; del.textContent = 'Excluir'; del.setAttribute('aria-label', 'Excluir ' + t.title);
+    del.addEventListener('click', () => feedback(engine.remove(t.id)));
+    acts.append(ed, del);
+    el.append(cb, info, acts);
+    void now;
+    return el;
+  }
+  function feedback(r) {
+    render();
+    if (r.kind === 'error') { toast(r.speech, false); return; }
+    if (r.changed) toast(r.speech, engine.canUndo);
+  }
+
+  // ---------------------------------------------------------- formulários
+  function readForm(prefix) {
+    const title = $('#' + prefix + 'Title').value.trim();
+    const v = $('#' + prefix + 'Date').value;
+    const allDay = $('#' + prefix + 'AllDay').checked;
+    const lead = Number($('#' + prefix + 'Remind').value);
+    const rec = $('#' + prefix + 'Rec').value;
+    const due = v ? new Date(v) : null;
+    return { title, due: due && !isNaN(due) ? due : null, allDay, reminders: lead >= 0 ? [lead] : [], recurrence: rec ? { freq: rec } : null };
+  }
+  $('#manualForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const p = readForm('m');
+    if ($('#mDate').value && !p.due) { toast('Data inválida.', false); return; }
+    const r = engine.addManual(p);
+    feedback(r);
+    if (r.kind !== 'error') { $('#mTitle').value = ''; $('#mRec').value = ''; }
+  });
+  function resetManualDate() { const d = new Date(Date.now() + 3600000); d.setMinutes(0, 0, 0); $('#mDate').value = toLocalInput(d); }
+  resetManualDate();
+
+  let editing = null;
+  function openEdit(t) {
+    editing = t.id;
+    $('#eTitle').value = t.title;
+    $('#eDate').value = t.dueAt ? toLocalInput(new Date(t.dueAt)) : '';
+    $('#eAllDay').checked = !!t.allDay;
+    $('#eRemind').value = String(t.reminderOffsetsMinutes.length ? (LEADS.some(([v]) => v === t.reminderOffsetsMinutes[0]) ? t.reminderOffsetsMinutes[0] : 15) : -1);
+    $('#eRec').value = t.recurrenceRule ? t.recurrenceRule.freq : '';
+    const dlg = $('#editDlg');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  $('#editDlg').addEventListener('close', () => {
+    const dlg = $('#editDlg');
+    if (dlg.returnValue !== 'save' || !editing) { editing = null; return; }
+    const p = readForm('e');
+    if ($('#eDate').value && !p.due) { toast('Data inválida.', false); return; }
+    const r = engine.update(editing, { title: p.title, due: p.due, allDay: p.allDay, reminders: p.reminders, recurrence: p.recurrence });
+    editing = null;
+    feedback(r);
+  });
+
+  // ----------------------------------------------- notificações e avisos
+  let swReg = null;
+  if ('serviceWorker' in navigator && window.isSecureContext && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').then((r) => { swReg = r; }).catch(() => { swReg = null; });
+  }
+  function notifInfo() {
+    const el = $('#notifInfo');
+    if (!('Notification' in window)) { el.textContent = 'Este navegador não oferece notificações.'; $('#notifBtn').disabled = true; return; }
+    const p = Notification.permission;
+    el.textContent = p === 'granted' ? 'Notificações ativadas (com a página aberta).' : p === 'denied' ? 'Notificações bloqueadas: libere nas permissões do site.' : 'Notificações ainda não autorizadas.';
+    $('#notifBtn').disabled = p !== 'default';
+  }
+  notifInfo();
+  $('#notifBtn').addEventListener('click', async () => {
+    try { await Notification.requestPermission(); } catch (e) { /* navegadores antigos */ }
+    notifInfo();
+    if (Notification.permission === 'granted') notify('JARVIS AI', 'Notificações ativadas. Avisarei enquanto esta página estiver aberta.', 'teste');
+  });
+  async function notify(title, body, tag) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return false;
+    try {
+      const reg = swReg || (navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null);
+      if (reg && reg.showNotification) { await reg.showNotification(title, { body, tag, renotify: true }); return true; }
+    } catch (e) { /* tenta o construtor */ }
+    try { new Notification(title, { body, tag }); return true; } catch (e) { return false; }
+  }
+  function chime() {
+    try {
+      const A = window.AudioContext || window.webkitAudioContext;
+      if (!A) return;
+      const ctx = chime.ctx || (chime.ctx = new A());
+      const t0 = ctx.currentTime;
+      [660, 880].forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = f; o.type = 'sine';
+        g.gain.setValueAtTime(0.0001, t0 + i * 0.18); g.gain.exponentialRampToValueAtTime(0.15, t0 + i * 0.18 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.18 + 0.16);
+        o.connect(g).connect(ctx.destination); o.start(t0 + i * 0.18); o.stop(t0 + i * 0.18 + 0.18);
+      });
+    } catch (e) { /* sem áudio */ }
+  }
+  function tick() {
+    const due = engine.dueReminders();
+    const now = new Date();
+    const fresh = due.filter((x) => !x.missed), missed = due.filter((x) => x.missed);
+    const msgs = [];
+    for (const x of fresh) {
+      const when = x.offset === 0 ? 'agora' : C.describeWhen(x.task, now);
+      msgs.push('Lembrete' + (S.honorific ? ', senhor' : '') + ': ' + x.task.title + ', ' + when + '.');
+      notify('JARVIS · Lembrete', x.task.title + ' — ' + (x.offset === 0 ? 'agora' : C.describeWhen(x.task, now)), x.key);
+      engine.markNotified(x.task.id, x.key);
+    }
+    if (missed.length) {
+      msgs.push('Enquanto a página estava fechada, venceram ' + missed.length + ' aviso(s): ' + missed.map((x) => x.task.title).join('; ') + '.');
+      missed.forEach((x) => engine.markNotified(x.task.id, x.key));
+      notify('JARVIS · Avisos perdidos', missed.map((x) => x.task.title).join(', '), 'missed');
+    }
+    if (engine.summaryDue()) {
+      const s = engine.summaryText();
+      engine.markSummary();
+      msgs.push(s);
+      notify('JARVIS · Resumo do dia', s, 'summary');
+    }
+    if (msgs.length) {
+      const text = msgs.join(' ');
+      const box = $('#reply'); box.textContent = text; box.className = 'reply'; box.hidden = false;
+      log('JARVIS', text, 'j');
+      chime();
+      setTimeout(() => speakWhenFree(text), 450);
+      render();
+    }
+  }
+  setInterval(tick, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { greet(); render(); tick(); } });
+  setTimeout(tick, 1500);
+
+  $('#sumOn').addEventListener('change', (e) => { S.summary.enabled = e.target.checked; if (e.target.checked) S.summary.lastRun = C.dayKey(new Date()); saveS(); });
+  $('#sumTime').addEventListener('change', (e) => { if (e.target.value) { S.summary.time = e.target.value; saveS(); } });
+  $('#sumNow').addEventListener('click', () => { const s = engine.summaryText(); $('#reply').textContent = s; $('#reply').className = 'reply'; $('#reply').hidden = false; speak(s); });
+
+  // ------------------------------------------------------------- backup
+  $('#exportBtn').addEventListener('click', () => {
+    const blob = new Blob([engine.exportData()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jarvis-backup-' + C.dayKey(new Date()) + '.json';
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $('#importBtn').addEventListener('click', () => $('#importFile').click());
+  $('#importFile').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    feedback(engine.importData(await f.text()));
+    e.target.value = '';
+  });
+  function storageInfo() {
+    $('#storageInfo').textContent = storageOk
+      ? 'Tarefas guardadas neste navegador (' + engine.tasks.length + '). Outro navegador ou aparelho não vê estes dados até a sincronização na nuvem. Fuso: ' + (Intl.DateTimeFormat().resolvedOptions().timeZone || 'local') + '.'
+      : 'Armazenamento indisponível: exporte um backup antes de fechar.';
+  }
+  render();
+})();
+</script>
+</body>
+</html>
